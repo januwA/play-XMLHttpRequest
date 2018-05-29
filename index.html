@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <button class="get">get String</button>
+    <br>
+    <button class="getj">get Json</button>
+    <br>
+    <button class="post">post</button>
+    <script src="./ajax.js"></script>
+    <script>
+        const l = console.log;
+        ajanuw.create({
+            baseurl: 'http://localhost:3000/test'
+        })
+        document.querySelector('.get').addEventListener('click', async function (e) {
+            let res = await ajanuw.g('/text', {
+                body: {
+                    name: 'ajanuw',
+                    age: 12
+                },
+                tfres(data) {
+                    return data + "...";
+                }
+            });
+
+            l(res)
+            l(typeof res.data)
+        })
+
+
+        document.querySelector('.getj').addEventListener('click', async function (e) {
+            let res = await ajanuw.g('/json', {
+                body: {
+                    name: 'ajanuw',
+                    age: 12
+                },
+                tfres(data) {
+                    return JSON.parse(data);
+                }
+            });
+
+            l(res)
+            l(typeof res.data)
+        })
+        document.querySelector('.post').addEventListener('click', async function (e) {
+            let res = await ajanuw.p('/post', {
+                body: {
+                    name: 'ajanuw',
+                    age: 122
+                },
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                tfres(data) {
+                    return JSON.parse(data);
+                }
+            });
+
+            l(res)
+            l(typeof res.data)
+        })
+    </script>
+</body>
+
+</html>
