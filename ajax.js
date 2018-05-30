@@ -34,9 +34,12 @@
     const l = console.log;
     let xhr = new XMLHttpRequest();
     let loadEvent = 'onreadystatechange';
-    let Ajanuw = function () {}
+    let Ajanuw = function () {
+        this.get = this.g;
+        this.post = this.p;
+    }
 
-    Ajanuw.serializeToJson = function (str) {
+    Ajanuw.serializeToJson = function (str = '') {
         /**
             let s = "name=ajanuw&age=22&doc=23123=0000"
             serializeToJson(s) -> {"name":"ajanuw","age":"22","doc":"23123%3D0000"}
@@ -52,7 +55,7 @@
         }, {}));
     }
 
-    Ajanuw.jsonToSerializ = function (obj) {
+    Ajanuw.jsonToSerializ = function (obj = {}) {
         // jsonToSerialize({name:'ajanuw',age:23}) -> name=ajanuw&age=23
         let s = '';
         for (const el in obj) {
@@ -63,17 +66,29 @@
 
     Ajanuw.handleUrl = function (url) {
         const baseURL = Ajanuw.opt.baseurl;
-        return baseURL ? `${baseURL}${url}` : url;
+        return baseURL ?
+            baseURL + '/' + url.replace(/^\/+/, '') :
+            url;
     }
 
     Ajanuw.handleBody = function (body) {
-        return Ajanuw.jsonToSerializ(body || {});
+        return body ?
+            Ajanuw.jsonToSerializ(body) :
+            body;
     }
 
     Ajanuw.handleTfres = function (tfres) {
         const transformresponse = tfres ? tfres : Ajanuw.opt.tfres;
         return function (resData) {
             return transformresponse ? transformresponse(resData) : resData;
+        }
+    }
+
+    Ajanuw.handleHeaders = function (headers = {}) {
+        // 合并全局配置的headers和发送时的headers
+        let configHeaders = Ajanuw.opt.headers || {};
+        return { ...configHeaders,
+            ...headers
         }
     }
 
@@ -89,10 +104,10 @@
             }
          */
         create(options) {
-            Ajanuw.opt = options;
+            Ajanuw.opt = options || {};
 
             let baseurl = Ajanuw.opt.baseurl;
-            if (baseurl) Ajanuw.opt.baseurl = baseurl.replace(/\/$/, '');
+            if (baseurl) Ajanuw.opt.baseurl = baseurl.replace(/\/+$/, '');
         },
 
 
@@ -101,53 +116,57 @@
          * @param {*} r: string
          * @param {*} options: { body, headers, tfres(data) { } }
          */
-        g(r, options) {
-            return new Promise((res, rej) => {
-                try {
+        g: function () {
+            return function (r, options) {
+                return new Promise((resolve, reject) => {
+
                     xhr[loadEvent] = handleLoad;
-                } catch (error) {
-                    rej(error)
-                }
+                    const query = Ajanuw.handleBody(options.body);
 
-                const body = Ajanuw.handleBody(options.body);
-                const url = Ajanuw.handleUrl(r);
-
-                xhr.open('GET', `${url}?${body}`, true); // true 代表异步
-                xhr.setRequestHeader('Accept', 'application/json, text/plain, */*');
-                const headers = options.headers || {};
-                for (const k in headers) {
-                    l(k, headers[k])
-                    xhr.setRequestHeader(k, headers[k]);
-                }
-                xhr.send();
-
-
-                function handleLoad() {
-                    // l( xhr.readyState )
-                    if (xhr.readyState === XMLHttpRequest.DONE) {
-                        const status = xhr.status;
-                        const isOk = status >= 200 && status < 300;
-                        if (isOk) {
-
-                            // 优先级高于全局配置
-                            const data = Ajanuw.handleTfres(options.tfres)(xhr.response);
-                            res({
-                                data: data,
-                                status: xhr.status,
-                                url: xhr.responseURL,
-                                timeout: xhr.timeout,
-                            })
+                    // get需要处理：没有查询参数的情况，有查询参数，和url中带查询参数的情况
+                    let url;
+                    if (query) {
+                        if (r.split(/\?/)[1]) {
+                            url = Ajanuw.handleUrl(r) + '&' + query
                         } else {
-                            rej(xhr)
+                            url = Ajanuw.handleUrl(r) + '?' + query
                         }
-                        // 收到回复
                     } else {
-                        // 还没准备好
+                        url = Ajanuw.handleUrl(r)
                     }
-                }
-            });
 
-        },
+                    xhr.open('GET', url, true); // true 代表异步
+                    xhr.setRequestHeader('Accept', 'application/json, text/plain, */*');
+                    const headers = Ajanuw.handleHeaders(options.headers);
+                    for (const k in headers) {
+                        xhr.setRequestHeader(k, headers[k]);
+                    }
+                    xhr.send();
+
+                    function handleLoad() {
+                        if (xhr.readyState === XMLHttpRequest.DONE) {
+                            const status = xhr.status;
+                            const isOk = status >= 200 && status < 300;
+
+                            if (isOk) {
+                                // 优先级高于全局配置
+                                resolve({
+                                    data: Ajanuw.handleTfres(options.tfres)(xhr.response),
+                                    status: xhr.status,
+                                    url: xhr.responseURL,
+                                    timeout: xhr.timeout,
+                                })
+                            } else {
+                                reject(xhr)
+                            }
+                            // 收到回复
+                        } else {
+                            // 还没准备好
+                        }
+                    }
+                });
+            }
+        }(),
 
         /**
          * post请求
@@ -155,7 +174,7 @@
          * @param {*} options 
          */
         p(r, options) {
-            return new Promise((res, rej) => {
+            return new Promise((resolve, reject) => {
                 try {
                     xhr[loadEvent] = handleLoad;
                 } catch (error) {
@@ -167,29 +186,27 @@
 
                 xhr.open('POST', `${url}`, true); // true 代表异步
                 // xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-                const headers = options.headers || {};
+
+                const headers = Ajanuw.handleHeaders(options.headers);
                 for (const k in headers) {
-                    l(k, headers[k])
                     xhr.setRequestHeader(k, headers[k]);
                 }
                 xhr.send(body);
 
                 function handleLoad() {
-                    // l( xhr.readyState )
                     if (xhr.readyState === XMLHttpRequest.DONE) {
                         const status = xhr.status;
                         const isOk = status >= 200 && status < 300;
+
                         if (isOk) {
-                            // 优先级高于全局配置
-                            const data = Ajanuw.handleTfres(options.tfres)(xhr.response);
-                            res({
-                                data: data,
+                            resolve({
+                                data: Ajanuw.handleTfres(options.tfres)(xhr.response),
                                 status: xhr.status,
                                 url: xhr.responseURL,
                                 timeout: xhr.timeout,
                             })
                         } else {
-                            rej(xhr)
+                            reject(xhr)
                         }
                         // 收到回复
                     } else {
@@ -198,6 +215,6 @@
                 }
             });
         },
-    }
+    } // prototype end..
     return new Ajanuw();
 });

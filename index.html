@@ -18,54 +18,48 @@
     <script>
         const l = console.log;
         ajanuw.create({
-            baseurl: 'http://localhost:3000/test'
+            headers: {
+                'content-type': 'application/x-www-form-urlencoded'
+            }
         })
+
         document.querySelector('.get').addEventListener('click', async function (e) {
-            let res = await ajanuw.g('/text', {
-                body: {
-                    name: 'ajanuw',
-                    age: 12
-                },
+            let q = {name: 'ajanuw', age: 14}
+            let res = await ajanuw.get('http://localhost:3000/test/text?name=asd&xxx=xml', {
                 tfres(data) {
-                    return data + "...";
+                    return data + "...hello ajanuw";
                 }
             });
 
             l(res)
-            l(typeof res.data)
         })
 
 
         document.querySelector('.getj').addEventListener('click', async function (e) {
-            let res = await ajanuw.g('/json', {
+            let res = await ajanuw.get('http://localhost:3000/test/json?hello=json', {
                 body: {
-                    name: 'ajanuw',
+                    name: 'ajanuw get json',
                     age: 12
                 },
-                tfres(data) {
-                    return JSON.parse(data);
-                }
             });
 
             l(res)
-            l(typeof res.data)
         })
+
+
         document.querySelector('.post').addEventListener('click', async function (e) {
-            let res = await ajanuw.p('/post', {
+            let res = await ajanuw.post('http://localhost:3000/test/create?post=ajanw', {
                 body: {
-                    name: 'ajanuw',
+                    name: 'ajanuw post',
                     age: 122
                 },
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
                 tfres(data) {
-                    return JSON.parse(data);
+                    return data;
+                    // return JSON.parse(data);
                 }
             });
 
             l(res)
-            l(typeof res.data)
         })
     </script>
 </body>
