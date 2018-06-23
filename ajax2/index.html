@@ -9,42 +9,57 @@
 </head>
 
 <body>
+  <form action="http://localhost:1995/api/post" class="form" method="post">
+    <input type="text" name="name" value="ajanuw">
+    <input type="text" name="name" value="alone">
+    <input type="text" name="name" value="xxx" disabled>
+    <input type="text" value="bbb">
+    <input type="password" name="pass" value="123">
+    <button type="submit">p</button>
+    <div>
+      <p>单选框 性别</p>
+      男：
+      <input type="radio" name="sex" checked value="男"> 女：
+      <input type="radio" name="sex" checked value="女">
+    </div>
+    <div>
+      足球：
+      <input type="checkbox" name="zuqiu" checked value="足球"> 篮球：
+      <input type="checkbox" name="lanqiu" checked value="蓝球">
+    </div>
+    <p>
+      <textarea name="wneben" id="" cols="30" rows="10">hello world</textarea>
+    </p>
+    <div>
+      <select name="form-select" multiple class="asd">
+        <option value="a" selected>aaa</option>
+        <option value="b" selected>bbb</option>
+        <option selected>
+          hello
+          <p>hello</p>
+        </option>
+      </select>
+    </div>
+    <fieldset name="group-from">
+      <legend>健康信息</legend>
+      身高：
+      <input type="text" name="height" value="111" /> 体重：
+      <input type="text" name="weight" value="222" />
+    </fieldset>
+  </form>
   <script src="./ajax2.js"></script>
   <script>
     let l = console.log;
 
-    let d = new FormData();
-    d.append('name', 'ajanuw')
-    l(typeof d)
-    l(Object.prototype.toString.call(d))
+    let http = ajanuw.create({
+      uri: 'http://localhost:1995/api'
+    })
 
-    let g = ajanuw.get('http://localhost:3000/test/text?a=123', {
-      query: {
-        name: 'ajanuw',
-        age: 12
-      },
-      headers: {
-        'content-type': 'text/plain'
-      },
-      timeout: 3000,
-      responseType: 'text'
-    }).ok(res => {
+    http.post('/post', {
+      data: '.form',
+      promise: true
+    }).then(res =>{
       l(res.data)
-    })
-
-    g.abort(function (res) {
-      l(res)
-    })
-
-    g.loadstart(function (start) {
-      l('start')
-    })
-
-    g.progress(function (e) {
-      l(e)
-    })
-    g.loadend(function (end) {
-      l('end')
     })
   </script>
 </body>

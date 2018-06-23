@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <div class="box">
+        <p>1</p>
+        <p>2</p>
+        <div>
+            <p>a</p>
+            <p>b</p>
+        </div>
+        <div>
+            <p>x</p>
+            <p>y</p>
+            <div>
+                <span>asd</span>
+            </div>
+        </div>
+    </div>
+    <script>
+        let l = console.log
+        let box = document.querySelector('.box')
+        let toArray = Array.from;
+
+        scan(box)
+
+        function scan(box) {
+            let arr = toArray(box.children)
+            for (let ele of arr) {
+                if (ele.children.length) {
+                   scan(ele)
+                }else{
+                    l( ele)
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
