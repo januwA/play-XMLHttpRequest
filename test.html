@@ -9,38 +9,80 @@
 </head>
 
 <body>
-    <div class="box">
-        <p>1</p>
-        <p>2</p>
-        <div>
-            <p>a</p>
-            <p>b</p>
-        </div>
-        <div>
-            <p>x</p>
-            <p>y</p>
-            <div>
-                <span>asd</span>
-            </div>
-        </div>
-    </div>
+    <script src="https://cdn.bootcss.com/axios/0.18.0/axios.js"></script>
+    <script src="./ajax2/ajax2.js"></script>
+    <script>
+        // let l = console.log
+        // let url = "http://localhost:1995/api/post"
+
+        // function request(src, data, next) {
+        //     let xhr = new XMLHttpRequest();
+        //     xhr.addEventListener('readystatechange', function (e) {
+        //         if (xhr.readyState === 4) {
+        //             if (xhr.status >= 200 && xhr.status < 300) {
+        //                 next(xhr.response)
+        //             }
+        //         }
+        //     })
+        //     xhr.open('POST', url, true)
+        //     xhr.setRequestHeader('content-type', 'application/x-www-form-urlencoded')
+        //     xhr.send(data)
+        // }
+
+        // request(url, 'name=aaa', function (data) {
+        //     l(data)
+        // })
+        // request(url, 'name=bbb', function (data) {
+        //     l(data)
+        // })
+    </script>
+    <script>
+        // let l = console.log
+        // let http = axios.create({
+        //     baseURL: 'http://localhost:1995/api/'
+        // })
+
+        // let a = http.post('/post','name=aaa').then(res=>{
+        //     l(res.data.data)
+        // })
+
+        // let b = http.post('/post','name=bbb').then(res=>{
+        //     l(res.data.data)
+        // })
+
+        // http.get('/get?name=ccc').then(res =>{
+        //     l(res.data.data)
+        // })
+    </script>
     <script>
         let l = console.log
-        let box = document.querySelector('.box')
-        let toArray = Array.from;
+        let http = ajanuw.create({
+            uri: 'http://localhost:1995/api/'
+        }).hook({})
 
-        scan(box)
-
-        function scan(box) {
-            let arr = toArray(box.children)
-            for (let ele of arr) {
-                if (ele.children.length) {
-                   scan(ele)
-                }else{
-                    l( ele)
-                }
+        http.get('/get', {
+            query: {
+                test: 'ccc'
             }
-        }
+        }).then(res => {
+            l('测试thrn get: ', res.data.data)
+        })
+
+        http.get('/get', {
+            query: {
+                test: 'ddd'
+            }
+        }, false).ok(res => {
+            l('测试ok get: ', res.data.data)
+        })
+
+        http.get('/get', {
+            query: {
+                test: 'eee'
+            }
+        }, false).ok(res => {
+            l('测试ok2 get: ', res.data.data)
+        })
     </script>
 </body>
 

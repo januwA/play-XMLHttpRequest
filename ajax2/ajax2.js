@@ -24,14 +24,17 @@
 
   const l = console.log;
   const _tostring = (v) => Object.prototype.toString.call(v);
-  let xhr = new XMLHttpRequest();
+  // let xhr = new XMLHttpRequest();
   let errorEvent = 'onerror',
-    loadEvent = ('onload' in xhr) ? 'onload' : 'onreadstatechange',
+    loadEvent = 'onload',
     loadstartEvent = 'onloadstart',
     loadendEvent = 'onloadend',
     progressEvent = 'onprogress',
     timeoutEvent = 'ontimeout',
     abortEvent = 'onabort';
+
+  // 每个请求的钩子
+  let hook = ['ok', 'abort', 'loadstart', 'progress', 'loadend', 'timeout', 'error'];
 
   function Ajanuw() {}
 
@@ -79,19 +82,17 @@
   Ajanuw.prototype = {
     init: function () {
       // this._xhr = xhr; // 整个 xhr
-      this._ok = null; // ok 钩子
-      this._abort = null; // 请求退出钩子
-      this._loadstart = null; // 请求开始钩子
-      this._progress = null; // 请求进度钩子
-      this._loadend = null; // 请求结束钩子
-      this._timeout = null; // 请求超时钩子
-      this._error = null; // 请求发生错误钩子
+      hook.forEach(h => {
+        this['_' + h] = null;
+      });
+      this.xhr = null;
       return this;
     },
 
     create: function (opt = {}) { // 全局默认配置
       Ajanuw.config = opt;
       return this;
+      // return new Ajanuw.prototype.init()
     },
 
     hook: function (opt = {}) { // 全局默认钩子，会和单独请求的钩子一起执行
@@ -100,7 +101,9 @@
       return this;
     },
 
-    get: function (r, opt, isReturnPromsie = true) {
+    get: function (r, opt = {}, isReturnPromsie = true) {
+      let xhr = new XMLHttpRequest();
+      this.xhr = xhr;
       let resData, rejData;
       const P = new Promise((resolve, reject) => {
         resData = resolve;
@@ -127,22 +130,22 @@
 
             let notHook;
             if (opt.hook) notHook = opt.hook.includes('ok'); // 禁用全局钩子
-            if (notHook) {
-              if (this._ok) {
+            if (notHook || !!!(Ajanuw.hook && Ajanuw.hook.ok)) {
+              if (this._ok && isReturnPromsie === false) {
                 this._ok(res)
-              } else if (isReturnPromsie) {
+              } else if (isReturnPromsie === true) {
                 resData(res)
               }
             } else {
-              if (this._ok && Ajanuw.hook.ok) {
+              if ((this._ok && isReturnPromsie === false) && Ajanuw.hook && Ajanuw.hook.ok) {
                 this._ok(res), Ajanuw.hook.ok(res);
-              } else if (isReturnPromsie && Ajanuw.hook.ok) {
+              } else if (isReturnPromsie === true && Ajanuw.hook && Ajanuw.hook.ok) {
                 resData(res), Ajanuw.hook.ok(res);
-              } else if (this._ok) {
+              } else if (this._ok && isReturnPromsie === false) {
                 this._ok(res);
-              } else if (Ajanuw.hook.ok) {
+              } else if (Ajanuw.hook && Ajanuw.hook.ok) {
                 Ajanuw.hook.ok(res);
-              } else if (isReturnPromsie) {
+              } else if (isReturnPromsie === true) {
                 resData(res)
               }
             }
@@ -172,52 +175,18 @@
 
 
       // 各种钩子
-      xhr[abortEvent] = (abort) => {
-        let notHook;
-        if (opt.hook) notHook = opt.hook.includes('abort');
-        l(notHook)
-        if (this._abort) {
-          this._abort(abort);
-        }
-      }
-      xhr[loadstartEvent] = (start) => {
-        setTimeout(() => {
-          if (this._loadstart) {
-            this._loadstart(start)
-          }
-        })
-      }
-      xhr[progressEvent] = (progress) => {
-        if (this._progress) {
-          this._progress(progress);
-        }
-      }
-      xhr[loadendEvent] = (loadend) => {
-        if (this._loadend) {
-          this._loadend(loadend);
-        }
-      }
-      xhr[timeoutEvent] = (timeout) => {
-        if (this._timeout) {
-          this._timeout(timeout);
-        }
-      }
-      xhr[errorEvent] = (error) => {
-        if (this._error) {
-          this._error(error);
-        } else if (isReturnPromsie) {
-          rejData(error)
-        }
-      }
+      this.eventHook(xhr, resData, rejData, isReturnPromsie, opt.hook, [abortEvent, loadstartEvent, loadendEvent, progressEvent, errorEvent, timeoutEvent]);
       xhr.send(null);
-      if (isReturnPromsie) { // 默认返回promise，设置false返回钩子
+      if (isReturnPromsie === true) { // 默认返回promise，设置false返回钩子
         return P;
       } else {
         return this;
       }
     },
 
-    post: function (r, opt, isReturnPromsie = true) {
+    post: function (r, opt = {}, isReturnPromsie = true) {
+      let xhr = new XMLHttpRequest();
+      this.xhr = xhr;
       let resData, rejData;
       const P = new Promise((resolve, reject) => {
         resData = resolve;
@@ -313,23 +282,23 @@
             res.data = data;
 
             let notHook;
-            if (opt.hook) notHook = opt.hook.includes('ok'); // 禁用全局钩子
-            if (notHook) {
-              if (this._ok) {
+            if (opt.hook) notHook = opt.hook.includes('ok'); // 禁用全局钩子?
+            if (notHook || !!!(Ajanuw.hook && Ajanuw.hook.ok)) { // 禁用全局钩子，或者全局钩子更本不存在
+              if (this._ok && isReturnPromsie === false) { // ok和then二选一
                 this._ok(res)
-              } else if (isReturnPromsie) {
+              } else if (isReturnPromsie === true && this._ok) {
                 resData(res)
               }
             } else {
-              if (this._ok && Ajanuw.hook.ok) {
+              if ((this._ok && isReturnPromsie === false) && Ajanuw.hook && Ajanuw.hook.ok) {
                 this._ok(res), Ajanuw.hook.ok(res);
-              } else if (isReturnPromsie && Ajanuw.hook.ok) {
+              } else if (isReturnPromsie === true && Ajanuw.hook && Ajanuw.hook.ok) {
                 resData(res), Ajanuw.hook.ok(res);
-              } else if (this._ok) {
+              } else if (this._ok && isReturnPromsie === false) {
                 this._ok(res);
-              } else if (Ajanuw.hook.ok) {
+              } else if (Ajanuw.hook && Ajanuw.hook.ok) {
                 Ajanuw.hook.ok(res);
-              } else if (isReturnPromsie) {
+              } else if (isReturnPromsie === true) {
                 resData(res)
               }
             }
@@ -362,64 +331,73 @@
 
 
       // 各种钩子
-      xhr[abortEvent] = (abort) => {
-        let notHook;
-        if (opt.hook) notHook = opt.hook.includes('abort');
-        if (notHook) {
-          if (this._abort) {
-            this._abort(abort);
-          }
-        } else {
-          if (this._abort && Ajanuw.hook.abort) {
-            this._abort(abort), Ajanuw.hook.abort(abort);
-          } else if (this._abort) {
-            this._abort(abort)
-          } else if (Ajanuw.hook.abort) {
-            Ajanuw.hook.abort(abort)
-          }
-        }
-      }
-      xhr[loadstartEvent] = (start) => {
-        setTimeout(() => {
-          if (this._loadstart) {
-            this._loadstart(start)
-          }
-        })
-      }
-      xhr[progressEvent] = (progress) => {
-        if (this._progress) {
-          this._progress(progress);
-        }
-      }
-      xhr[loadendEvent] = (loadend) => {
-        if (this._loadend) {
-          this._loadend(loadend);
-        }
-      }
-      xhr[timeoutEvent] = (timeout) => {
-        if (this._timeout) {
-          this._timeout(timeout);
-        }
-      }
-      xhr[errorEvent] = (error) => {
-        if (this._error) {
-          this._error(error);
-        } else if (isReturnPromsie) {
-          rejData(error)
-        }
-      }
+      this.eventHook(xhr, resData, rejData, isReturnPromsie, opt.hook, [abortEvent, loadstartEvent, loadendEvent, progressEvent, errorEvent, timeoutEvent]);
       xhr.send(data);
-      if (isReturnPromsie) {
+      if (isReturnPromsie === true) {
         return P;
       } else {
         return this;
       }
     },
 
+    eventHook: function (xhr, resData, rejData, isReturnPromsie, hook = [], hooks = []) {
+      hooks.forEach(hookEvent => {
+        // l(hook, hook.slice(2), '_' + hook.slice(2))
+        let hookName = hookEvent.slice(2),
+          _hookName = '_' + hookName;
+        xhr[hookEvent] = e => {
+          e['msg'] = this.msg || null;
+          let notHook = false;
+          if (hook) notHook = hook.includes(hookName);
+          if (notHook) {
+            if (hookName === 'loadstart') {
+              setTimeout(() => {
+                if (this[_hookName]) this[_hookName](e);
+              });
+            } else {
+              if (hookName === 'error') {
+                if (this[_hookName] && isReturnPromsie === false) {
+                  this[_hookName](e)
+                } else if (isReturnPromsie === true) {
+                  rejData(e)
+                }
+              } else {
+                if (this[_hookName]) this[_hookName](e);
+              }
+            }
+          } else {
+            if (hookName === 'loadstart') {
+              setTimeout(() => {
+                if ((this[_hookName] && isReturnPromsie === false) && Ajanuw.hook && Ajanuw.hook[hookName]) {
+                  // 同时出现全局钩子和单个钩子，先执行全局的钩子
+                  Ajanuw.hook[hookName](e), this[_hookName](e);
+                } else if (this[_hookName] && isReturnPromsie === false) {
+                  this[_hookName](e);
+                } else if (Ajanuw.hook && Ajanuw.hook[hookName]) {
+                  Ajanuw.hook[hookName](e);
+                }
+              })
+            } else {
+              if ((this[_hookName] && isReturnPromsie === false) && Ajanuw.hook && Ajanuw.hook[hookName]) {
+                // 同时出现全局钩子和单个钩子，先执行全局的钩子
+                Ajanuw.hook[hookName](e), this[_hookName](e);
+              } else if (this[_hookName] && isReturnPromsie === false) {
+                this[_hookName](e);
+              } else if (Ajanuw.hook && Ajanuw.hook[hookName] && isReturnPromsie === true) {
+                Ajanuw.hook[hookName](e);
+              } else if (isReturnPromsie === true && hookName === 'error') {
+                rejData(e)
+              }
+            }
+          }
+        }
+      });
+    },
+
     ok: function (nextHandle) {
       // 设置请求成功的回调函数
-      this._ok = nextHandle;
-      return this;
+      return nextHandle;
+      // return this;
     },
 
     abort: function (abortHandle) {
@@ -452,9 +430,10 @@
       return this;
     },
 
-    exit: function () {
+    exit: function (msg) {
       // 主动退出请求
-      xhr.abort();
+      this.msg = msg;
+      this.xhr.abort(msg);
       return this;
     }
 
