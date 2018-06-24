@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+
+<body>
+  <form action="http://localhost:1995/api/post" class="form" method="post">
+    <input type="text" name="name" value="ajanuw">
+    <input type="text" name="name" value="alone">
+    <input type="text" name="name" value="xxx" disabled>
+    <input type="text" value="bbb">
+    <input type="password" name="pass" value="123">
+    <button type="submit">p</button>
+    <div>
+      <p>单选框 性别</p>
+      男：
+      <input type="radio" name="sex" checked value="男"> 女：
+      <input type="radio" name="sex" checked value="女">
+    </div>
+    <div>
+      足球：
+      <input type="checkbox" name="zuqiu" checked value="足球"> 篮球：
+      <input type="checkbox" name="lanqiu" checked value="蓝球">
+    </div>
+    <p>
+      <textarea name="wneben" id="" cols="30" rows="10">hello world</textarea>
+    </p>
+    <div>
+      <select name="form-select" multiple class="asd">
+        <option value="a" selected>aaa</option>
+        <option value="b" selected>bbb</option>
+        <option selected>
+          hello
+          <p>hello</p>
+        </option>
+      </select>
+    </div>
+    <fieldset name="group-from">
+      <legend>健康信息</legend>
+      身高：
+      <input type="text" name="height" value="111" /> 体重：
+      <input type="text" name="weight" value="222" />
+    </fieldset>
+  </form>
+  <script src="./ajax2.js"></script>
+  <script>
+    let l = console.log;
+
+    let http = ajanuw
+      .create({
+        uri: 'http://localhost:1995/test',
+        timeout: 3333,
+      })
+      .hook({
+        ok(res) {
+          l('全局 ok')
+        },
+
+        error(err) {
+          l('全局处理错误')
+        },
+
+        timeout(res) {
+          l('timeout')
+        },
+
+        abort(res) {
+          l('全局 请求退出')
+        },
+        loadstart(res) {
+          l('全局请求 start')
+        },
+        loadend(res) {
+          l('全局请求 end')
+        }
+      })
+
+    let x = http.post('/create?name=xxx', {
+        query: {
+          id: '000'
+        },
+        body: '.form',
+        timeout: '2222',
+        resType: 'text',
+        hook: ['ok'], // 在这个请求里面，禁用指定的全局钩子
+      }, 0)
+      .ok(res => {
+        l(res.data)
+      })
+      .abort(res => {
+        l('请求已经退出.')
+      })
+
+
+    x.exit() // 请求abort
+  </script>
+</body>
+
+</html>
