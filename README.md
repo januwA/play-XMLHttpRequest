@@ -12,15 +12,17 @@ let http = ajanuw.create({
 
 ## get
 > 默认返回 promsie数据
+> promsie不能主动退出请求
 ```
 // localhost:3000/api/login?name=xxx&pass=123
 http.get('/login', {
-  data: { // query
+  query: { // query
     name: 'xxx',
     pass: 123,
   },
   set: {}, // 头信息
   timeout: 2000,
+  resType: 'text', // 服务器返回的数据，默认为json
 }).then(res => {
   // res.data
 });
@@ -29,20 +31,20 @@ http.get('/login', {
 // 不返回 promise
 // 可以使用关于当前请求的一些钩子
 http.get('/login', {
-  data: { // query
+  query: { // query
     name: 'xxx',
     pass: 123,
   },
   set: {}, // 头信息 headers
   timeout: 2000,
 }, 0)
-.ok(res => // res.data)
-.timeout(res => // res)
-.error(err => // err)
-.progress(p => // p)
-.abort( res => // res)
-.loadstart(res => // res)
-.loadend(res => // res)
+.ok(res => {// res.data})
+.timeout(res => {// res})
+.error(err => {// err})
+.progress(p => {// p})
+.abort( res => {// res})
+.loadstart(res => {// res})
+.loadend(res => {// res})
 ```
 
 ## post
@@ -50,7 +52,10 @@ http.get('/login', {
 ```
 // object
 http.post('/create',{
-  data: { // body
+  query: {
+    id: '000'
+  },
+  body: { // body
     name: 'xxx',
     age: [12, 14]
   },
@@ -61,7 +66,7 @@ http.post('/create',{
 
 // formData
 http.post('/create',{
-  data: new formData(),
+  body: new formData(),
   set: {}, // headers
 }).then(res => {
   // res.data
@@ -70,7 +75,7 @@ http.post('/create',{
 
 // form表单，暂不支持media表单
 http.post('/create',{
-  data: '.form',
+  body: '.form',
   set: {}, // headers
 }).then(res => {
   // res.data

@@ -75,10 +75,11 @@
       base.replace(/\/+$/, '') + '/' + url.replace(/^\/+/, '') :
       url;
   }
+
   Ajanuw.prototype = {
     init: function () {
-      this._xhr = xhr;
-      this._next = null; // ok 钩子
+      // this._xhr = xhr; // 整个 xhr
+      this._ok = null; // ok 钩子
       this._abort = null; // 请求退出钩子
       this._loadstart = null; // 请求开始钩子
       this._progress = null; // 请求进度钩子
@@ -88,8 +89,14 @@
       return this;
     },
 
-    create: function (opt = {}) {
+    create: function (opt = {}) { // 全局默认配置
       Ajanuw.config = opt;
+      return this;
+    },
+
+    hook: function (opt = {}) { // 全局默认钩子，会和单独请求的钩子一起执行
+      // {ok,timeout,error,progress,abort,loadstart,loadend}
+      Ajanuw.hook = opt;
       return this;
     },
 
@@ -99,7 +106,7 @@
         resData = resolve;
         rejData = reject;
       });
-      let query = Ajanuw.handleData(opt.data);
+      let query = Ajanuw.handleData(opt.query); // get请求的query数据
       let url;
       if (query) {
         if (r.split(/\?/)[1]) {
@@ -117,11 +124,29 @@
             let data = xhr.response;
             let res = xhr;
             res.data = data;
-            if (this._next) {
-              this._next(res);
+
+            let notHook;
+            if (opt.hook) notHook = opt.hook.includes('ok'); // 禁用全局钩子
+            if (notHook) {
+              if (this._ok) {
+                this._ok(res)
+              } else if (isReturnPromsie) {
+                resData(res)
+              }
             } else {
-              resData(res)
+              if (this._ok && Ajanuw.hook.ok) {
+                this._ok(res), Ajanuw.hook.ok(res);
+              } else if (isReturnPromsie && Ajanuw.hook.ok) {
+                resData(res), Ajanuw.hook.ok(res);
+              } else if (this._ok) {
+                this._ok(res);
+              } else if (Ajanuw.hook.ok) {
+                Ajanuw.hook.ok(res);
+              } else if (isReturnPromsie) {
+                resData(res)
+              }
             }
+
           }
         }
       }
@@ -148,10 +173,11 @@
 
       // 各种钩子
       xhr[abortEvent] = (abort) => {
+        let notHook;
+        if (opt.hook) notHook = opt.hook.includes('abort');
+        l(notHook)
         if (this._abort) {
           this._abort(abort);
-        } else {
-          rejData(abort);
         }
       }
       xhr[loadstartEvent] = (start) => {
@@ -174,14 +200,12 @@
       xhr[timeoutEvent] = (timeout) => {
         if (this._timeout) {
           this._timeout(timeout);
-        } else {
-          rejData(timeout)
         }
       }
       xhr[errorEvent] = (error) => {
         if (this._error) {
           this._error(error);
-        } else {
+        } else if (isReturnPromsie) {
           rejData(error)
         }
       }
@@ -199,8 +223,19 @@
         resData = resolve;
         rejData = reject;
       });
+      let query = Ajanuw.handleData(opt.query); // post请求设置query查询数据
+      let url;
+      if (query) {
+        if (r.split(/\?/)[1]) {
+          url = Ajanuw.handleUrl(r) + '&' + query;
+        } else {
+          url = Ajanuw.handleUrl(r) + '?' + query;
+        }
+      } else {
+        url = Ajanuw.handleUrl(r);
+      }
 
-      let data = opt.data || {};
+      let data = opt.body || {}; // post主体数据
       let dataTag = _tostring(data);
       /**
        * 判断post数据的类型，更具类型做处理，和设置一些header
@@ -270,19 +305,35 @@
         data = Ajanuw.handleData(body);
       }
 
-      let url = Ajanuw.handleUrl(r);
-
       xhr[loadEvent] = () => {
         if (xhr.readyState === XMLHttpRequest.DONE) {
           if (xhr.status >= 200 && xhr.status < 300) {
             let data = xhr.response;
             let res = xhr;
             res.data = data;
-            if (this._next) {
-              this._next(res);
+
+            let notHook;
+            if (opt.hook) notHook = opt.hook.includes('ok'); // 禁用全局钩子
+            if (notHook) {
+              if (this._ok) {
+                this._ok(res)
+              } else if (isReturnPromsie) {
+                resData(res)
+              }
             } else {
-              resData(res);
+              if (this._ok && Ajanuw.hook.ok) {
+                this._ok(res), Ajanuw.hook.ok(res);
+              } else if (isReturnPromsie && Ajanuw.hook.ok) {
+                resData(res), Ajanuw.hook.ok(res);
+              } else if (this._ok) {
+                this._ok(res);
+              } else if (Ajanuw.hook.ok) {
+                Ajanuw.hook.ok(res);
+              } else if (isReturnPromsie) {
+                resData(res)
+              }
             }
+
           }
         }
       }
@@ -312,10 +363,20 @@
 
       // 各种钩子
       xhr[abortEvent] = (abort) => {
-        if (this._abort) {
-          this._abort(abort);
+        let notHook;
+        if (opt.hook) notHook = opt.hook.includes('abort');
+        if (notHook) {
+          if (this._abort) {
+            this._abort(abort);
+          }
         } else {
-          rejData(abort);
+          if (this._abort && Ajanuw.hook.abort) {
+            this._abort(abort), Ajanuw.hook.abort(abort);
+          } else if (this._abort) {
+            this._abort(abort)
+          } else if (Ajanuw.hook.abort) {
+            Ajanuw.hook.abort(abort)
+          }
         }
       }
       xhr[loadstartEvent] = (start) => {
@@ -338,14 +399,12 @@
       xhr[timeoutEvent] = (timeout) => {
         if (this._timeout) {
           this._timeout(timeout);
-        } else {
-          rejData(timeout)
         }
       }
       xhr[errorEvent] = (error) => {
         if (this._error) {
           this._error(error);
-        } else {
+        } else if (isReturnPromsie) {
           rejData(error)
         }
       }
@@ -359,7 +418,7 @@
 
     ok: function (nextHandle) {
       // 设置请求成功的回调函数
-      this._next = nextHandle;
+      this._ok = nextHandle;
       return this;
     },
 
@@ -390,6 +449,12 @@
 
     error: function (errorHandle) {
       this._error = errorHandle;
+      return this;
+    },
+
+    exit: function () {
+      // 主动退出请求
+      xhr.abort();
       return this;
     }
 
