@@ -36,10 +36,6 @@
   function Ajanuw() {}
 
   Ajanuw.serializeToJson = function (str = '') {
-    /**
-        let s = "name=ajanuw&age=22&doc=23123=0000"
-        serializeToJson(s) -> {"name":"ajanuw","age":"22","doc":"23123%3D0000"}
-       */
     return JSON.stringify(str.split('&').reduce((acc, elt) => {
       const index = elt.indexOf('=');
       const k = elt.substring(0, index);
@@ -51,11 +47,20 @@
     }, {}));
   }
 
-  Ajanuw.jsonToSerializ = function (obj = {}) {
-    // jsonToSerialize({name:'ajanuw',age:23}) -> name=ajanuw&age=23
+  Ajanuw.jsonToSerializ = function (o = {}) {
     let s = '';
-    for (const el in obj) {
-      s += `${el}=${obj[el]}&`
+    for (let k in o) {
+      let v = o[k];
+      let vTag = Object.prototype.toString.call(v);
+      if (vTag === '[object Array]') {
+        for (let i of v) {
+          s += `${k}=${encodeURIComponent(i)}&`
+        }
+      } else if (vTag === '[object Object]') {
+        s += `${k}=${encodeURIComponent(JSON.stringify(v))}&`
+      } else {
+        s += `${k}=${encodeURIComponent(v)}&`
+      }
     }
     return s.replace(/&$/, '');
   }
@@ -208,8 +213,9 @@
         // 表单有 media元素还请用 formData数据
         let f = document.querySelector(data);
         let toArray = Array.from;
-        let body =  {}
+        let body = {}
         scanDOM(f);
+
         function scanDOM(box) {
           let eles = toArray(box.children)
           for (let ele of eles) {
@@ -345,7 +351,6 @@
       } else {
         return this;
       }
-      return this;
     },
 
     ok: function (nextHandle) {
