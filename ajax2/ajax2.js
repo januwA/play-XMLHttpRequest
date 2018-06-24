@@ -93,7 +93,7 @@
       return this;
     },
 
-    get: function (r, opt) {
+    get: function (r, opt, isReturnPromsie = true) {
       let resData, rejData;
       const P = new Promise((resolve, reject) => {
         resData = resolve;
@@ -133,9 +133,11 @@
         xhr.setRequestHeader(k, headers[k]);
       }
 
-      // 设置timeout
+      // 设置timeout，没有的话就用全局的imeout
       if (opt.timeout) {
         xhr.timeout = opt.timeout;
+      } else if (Ajanuw.config.timeout) {
+        xhr.timeout = Ajanuw.config.timeout;
       }
 
       // 强制设置服务器返回数据的类型
@@ -184,14 +186,14 @@
         }
       }
       xhr.send(null);
-      if (opt.promise) {
+      if (isReturnPromsie) { // 默认返回promise，设置false返回钩子
         return P;
       } else {
         return this;
       }
     },
 
-    post: function (r, opt) {
+    post: function (r, opt, isReturnPromsie = true) {
       let resData, rejData;
       const P = new Promise((resolve, reject) => {
         resData = resolve;
@@ -295,9 +297,11 @@
         xhr.setRequestHeader(k, headers[k]);
       }
 
-      // 设置timeout
+      // 设置timeout，没有的话就用全局的imeout
       if (opt.timeout) {
         xhr.timeout = opt.timeout;
+      } else if (Ajanuw.config.timeout) {
+        xhr.timeout = Ajanuw.config.timeout;
       }
 
       // 强制设置服务器返回数据的类型
@@ -346,7 +350,7 @@
         }
       }
       xhr.send(data);
-      if (opt.promise) {
+      if (isReturnPromsie) {
         return P;
       } else {
         return this;
