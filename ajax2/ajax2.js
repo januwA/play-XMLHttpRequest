@@ -336,7 +336,8 @@
       if (isReturnPromsie === true) {
         return P;
       } else {
-        return this;
+        // return this;
+        return new Ajanuw()
       }
     },
 
