@@ -14,24 +14,39 @@
     let l = console.log
 
     let http = ajanuw.create({
-      uri: 'http://localhost/api',
+      uri: 'http://localhost:1995/api',
       timeout: 3000
     });
 
-    let a = http.get('http://localhost:1995/test/a?name=1', {
-      query: 'name=1'
-    }).ok(res => {
-      l(res)
+    let a = http.get('/get', {
+      name: 'one',
+      query: {
+        name: 1
+      }
+    }).then(res => {
+      l(res.data.data.name)
+    }).catch(err => {
+      l(err)
     })
 
-    l(a)
+    http.get('/get', {
+      query: {
+        name: 2
+      }
+    }).then(res => {
+      l(res.data.data.name)
+    }).catch(err => {
+      l(err)
+    })
 
-    // let b = http.get('http://localhost:1995/test/a?name=2', {
-    //   query: 'name=2'
-    // }).then(res => {
-    //   l('b=>', res.response)
-    // })
-    // l(b)
+
+    ajanuw.get('/get', {
+      query: {
+        name: 'asd'
+      }
+    }).then(res => {
+      l( res.data.data)
+    })
   </script>
 </body>
 
