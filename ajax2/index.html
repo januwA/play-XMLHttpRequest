@@ -54,89 +54,19 @@
 
     let http = ajanuw
       .create({
-        uri: 'http://localhost:1995/api',
+        uri: 'http://localhost:1995/test',
         timeout: 3333,
       })
-      .hook({
-        ok(res) {
-          l('全局 ok', res.data.data)
-        },
 
-        // error(err) {
-        //   l('全局处理错误')
-        // },
-
-        // timeout(res) {
-        //   l('timeout')
-        // },
-
-        // abort(res) {
-        //   l('全局 请求退出')
-        // },
-        // progress(p) {
-        //   l('全局进度')
-        // },
-        // loadstart(res) {
-        //   l('全局请求 start')
-        // },
-        // loadend(res) {
-        //   l('全局请求 end')
-        // }
-      })
-
-    let x = http.post('/post?name=xxx', {
-        query: {
-          id: '000'
-        },
+      let a = http.post('/create', {
         body: {
-          body: '111'
-        },
-        timeout: '2222',
-        // resType: 'text',
-        // hook: ['ok', 'loadstart', 'loadend', 'progress'], // 在这个请求里面，禁用指定的全局钩子
-      }, 0)
-      .ok(res => {
-        l("data: ", res.data.data)
-      })
-    // .loadstart(e => {
-    //   l('请求 start')
-    // })
-    // .progress(p => {
-    //   l('请求进度')
-    // })
-    // .loadend(e => {
-    //   l('请求 end')
-    // })
-    // .error(e => {
-    //   l('请求发生错误: ', e)
-    // })
-    // .timeout(e => {
-    //   l('请求超时')
-    // })
-    // .abort(res => {
-    //   l('请求已经退出.')
-    // })
-    // x.exit() // 请求abort
+          test: 'aaa'
+        }
+      }, false).ok(res=>[
+        l(res)
+      ])
 
-
-    http.post('/post', {
-      body: {
-        test: 222
-      }
-    }).then(res => {
-      l('then: ', res.data.data)
-    }).catch(e => {
-      l(e)
-    })
-
-    http.post('/post',{
-      body: {
-        test: 333
-      }
-    }, 0).ok(res => {
-      l(res.data.data)
-    })
-
+      l(a)
 
     // axios.create({
     //   baseURL: 'http://localhost:1995/api',
