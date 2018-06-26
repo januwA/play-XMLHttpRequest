@@ -1,18 +1,11 @@
 let l = console.log
 
-Function.prototype.method = function (name, fn) {
-    this.prototype[name] = fn;
+function asd() {
+  return 1
 }
 
-Promise.method('ok', function (fn) {
-    fn()
-})
+let o = {
+  abort: asd
+}
 
-let x = new Promise((resolve, reject) => {
-    resolve('res')
-})
-// .ok(function () {
-//     // l('ok hook')
-// })
-
-l(x)
+l(o.abort())

@@ -18,35 +18,51 @@
       timeout: 3000
     });
 
-    let a = http.get('/get', {
-      name: 'one',
+    http.request('get', '/get', {
+      body: {
+        body: 'body'
+      },
       query: {
-        name: 1
-      }
-    }).then(res => {
-      l(res.data.data.name)
-    }).catch(err => {
-      l(err)
+        query: 'query',
+      },
+      set: {
+
+      },
+      timeout: '2000',
+      resType: 'json'
     })
 
-    http.get('/get', {
-      query: {
-        name: 2
-      }
-    }).then(res => {
-      l(res.data.data.name)
-    }).catch(err => {
-      l(err)
-    })
+    // ajanuw.abort('one', {msg: '结束 one 请求'})
 
+    // http.get('/get', {
+    //   name: 'tow',
+    //   query: {
+    //     name: 2
+    //   }
+    // }).then(res => {
+    //   l(res.data.msg)
+    // }).catch(err => {
+    //   l(err)
+    // })
 
-    ajanuw.get('/get', {
-      query: {
-        name: 'asd'
-      }
-    }).then(res => {
-      l( res.data.data)
-    })
+    // ajanuw.abort('tow', {msg: '结束 tow 请求'})
+    // http.get('/notf',{
+    //   query: {
+    //     data: '404'
+    //   }
+    // }).then(res=>{
+    //   l(res)
+    // }).catch(err=>{
+    //   l(err)
+    // })
+
+    // ajanuw.get('http://localhost:1995/api/get', {
+    //   query: {
+    //     name: 'asd'
+    //   }
+    // }, false).ok(res => {
+    //   l( res.data.msg)
+    // });
   </script>
 </body>
 

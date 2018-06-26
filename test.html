@@ -12,29 +12,56 @@
     <script src="https://cdn.bootcss.com/axios/0.18.0/axios.js"></script>
     <script src="./ajax2/ajax2.js"></script>
     <script>
-        // let l = console.log
-        // let url = "http://localhost:1995/api/post"
+        let l = console.log
+        let reqs = {}
+        let url = "http://localhost:1995/api/get?name=1"
 
-        // function request(src, data, next) {
-        //     let xhr = new XMLHttpRequest();
-        //     xhr.addEventListener('readystatechange', function (e) {
-        //         if (xhr.readyState === 4) {
-        //             if (xhr.status >= 200 && xhr.status < 300) {
-        //                 next(xhr.response)
-        //             }
-        //         }
-        //     })
-        //     xhr.open('POST', url, true)
-        //     xhr.setRequestHeader('content-type', 'application/x-www-form-urlencoded')
-        //     xhr.send(data)
-        // }
+        let resolve, reject;
+        let p = new Promise((rs, rj) => {
+            resolve = rs;
+            reject = rj;
+        })
+        let xhr = new XMLHttpRequest();
+        name = 'ajanuw'
+        reqs[name] = xhr;
+        xhr.addEventListener('readystatechange', function (e) {
+            if (xhr.readyState === 4) {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    resolve(xhr)
+                }
+            }
+        })
 
-        // request(url, 'name=aaa', function (data) {
-        //     l(data)
-        // })
-        // request(url, 'name=bbb', function (data) {
-        //     l(data)
-        // })
+        xhr.open('GET', url, true)
+
+        // l(xhr === reqs.ajanuw)
+
+        // xhr.abort();
+
+        xhr.onabort = e => {
+            reject({
+                type: 'abort',
+                name: name,
+                state: ''
+            })
+            xhr = null;
+            delete reqs[name];
+        }
+        xhr = null;
+        if (xhr) {
+            xhr.send()
+        }else{
+            reject(123)
+        }
+
+        // xhr.abort()
+        // reqs[name].abort()
+
+        p.then(res => {
+            l('data: ', res.response)
+        }, err => {
+            l(err)
+        })
     </script>
     <script>
         // let l = console.log
@@ -55,34 +82,34 @@
         // })
     </script>
     <script>
-        let l = console.log
-        let http = ajanuw.create({
-            uri: 'http://localhost:1995/api/'
-        }).hook({})
+        // let l = console.log
+        // let http = ajanuw.create({
+        //     uri: 'http://localhost:1995/api/'
+        // }).hook({})
 
-        http.get('/get', {
-            query: {
-                test: 'ccc'
-            }
-        }).then(res => {
-            l('测试thrn get: ', res.data.data)
-        })
+        // http.get('/get', {
+        //     query: {
+        //         test: 'ccc'
+        //     }
+        // }).then(res => {
+        //     l('测试thrn get: ', res.data.data)
+        // })
 
-        http.get('/get', {
-            query: {
-                test: 'ddd'
-            }
-        }, false).ok(res => {
-            l('测试ok get: ', res.data.data)
-        })
+        // http.get('/get', {
+        //     query: {
+        //         test: 'ddd'
+        //     }
+        // }, false).ok(res => {
+        //     l('测试ok get: ', res.data.data)
+        // })
 
-        http.get('/get', {
-            query: {
-                test: 'eee'
-            }
-        }, false).ok(res => {
-            l('测试ok2 get: ', res.data.data)
-        })
+        // http.get('/get', {
+        //     query: {
+        //         test: 'eee'
+        //     }
+        // }, false).ok(res => {
+        //     l('测试ok2 get: ', res.data.data)
+        // })
     </script>
 </body>
 

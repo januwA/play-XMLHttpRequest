@@ -1,12 +1,13 @@
 {
   ///////////
   let l = console.log
-  let abort = {};
 
-  function Ajanuw() { /* ajax */ }
-  let CONFIG; // 全局配置
+  function Ajanuw(config) {
+    /* ajax */
+    this.CONFIG = config;
+  }
+
   function Util() { /* 工具函数库 */ }
-
   Function.prototype.method = function (name, fn) {
     this.prototype[name] = fn;
   }
@@ -45,33 +46,34 @@
     return s.replace(/&$/, '');
   });
 
-  Util.attr('handleGetQuery', function (r, query) {
+  Util.attr('handleGetQuery', function (r, query, CONFIG) {
     // 把get请求的query拼接到url里面，返回url
     let url;
-    if (query) { // 处理 url
+    let uri = CONFIG.uri;
+    if (query) {
       if (r.split(/\?/)[1]) {
-        url = Ajanuw.handleUrl(r) + '&' + query;
+        url = Util.handleUrl(uri, r) + '&' + query;
       } else {
-        url = Ajanuw.handleUrl(r) + '?' + query;
+        url = Util.handleUrl(uri, r) + '?' + query;
       }
     } else {
-      url = Ajanuw.handleUrl(r);
+      url = Util.handleUrl(uri, r);
     }
     return url;
-  })
+  });
 
-  Ajanuw.handleData = function (query) { // 处理get,post发送的数据
+  Util.attr('handleData', function (query) { // 处理get,post发送的数据
     return query ?
       Util.jsonToSerializ(query) :
       query;
-  }
+  });
 
-  Ajanuw.handleUrl = function (url) { // 处理全局uri 和请求的url
-    let base = CONFIG.uri
+  Util.attr('handleUrl', function (uri, url) { // 处理全局uri 和请求的url
+    let base = uri
     return base ?
       base.replace(/\/+$/, '') + '/' + url.replace(/^\/+/, '') :
       url;
-  }
+  });
 
   function Config(config = {}) {
     let {
@@ -82,43 +84,40 @@
     this.timeout = timeout || 0;
   }
 
-  function Get(r, opt = {}, RP = true) { // 请求默认返回promise
+  function Get(r, opt = {}, RP = true, CONFIG = {}) { // 请求默认返回promise
     let res, rej;
     let p = new Promise((resolve, reject) => {
       res = resolve;
       rej = reject;
     });
 
+    if (opt.name) this.name = opt.name;
     let xhr = new XMLHttpRequest();
-    this.xhr = xhr;
+    // this.xhr = xhr;
 
     xhr.onreadystatechange = () => {
       // 关于XMLHttpRequest.DONE
       // Doncs: https://xhr.spec.whatwg.org/#xmlhttprequest
-      if (xhr.readyState === XMLHttpRequest.DONE) {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          let obj = xhr;
-          let resHeaders = xhr.getAllResponseHeaders();
-          let data = xhr.response;
-          obj['responseHeaders'] = resHeaders;
-          obj['data'] = data;
-          if (RP === true) {
-            res(obj);
-          } else {
-            this._ok(obj);
-          }
-        } else {
-          if (RP === true) {
-            rej(xhr)
-          } else {
-            // error(xhr)
-          }
-        }
+      if (!xhr || xhr.readyState !== XMLHttpRequest.DONE) return;
+
+      // 404 或其他情况
+      // l(xhr.statusText)
+      if (xhr.responseURL && xhr.statusText !== 'OK' /*&& !(xhr.status >= 200 && xhr.status < 300)*/ ) {
+        rej(xhr);
+        xhr = null;
       }
+
+      let obj = xhr;
+      let resHeaders = xhr.getAllResponseHeaders();
+      let data = xhr.response;
+      obj['responseHeaders'] = resHeaders;
+      obj['data'] = data;
+      res(obj);
+      xhr = null;
     }
 
-    let query = Ajanuw.handleData(opt.query); // 处理数据
-    let url = Util.handleGetQuery(r, query); // query拼到url里面
+    let query = Util.handleData(opt.query); // 处理数据
+    let url = Util.handleGetQuery(r, query, CONFIG); // query拼到url里面
 
     let async = true;
     if (opt.async !== undefined && (typeof opt.async === 'boolean')) {
@@ -143,48 +142,36 @@
       xhr.responseType = opt.resType || 'json';
     }
 
-
-
-    // xhr.setRequestHeader('content-type', 'application/x-www-form-urlencoded')
-    xhr.send(null);
-    if (opt.name) this.name = opt.name;
+    xhr.onabort = (e) => {
+      xhr = null;
+    }
     setTimeout(() => {
-      if (abort.name && abort.name === this.name) {
-        if (abort.fn) {
-          return abort.fn(xhr);
-        }else{
-          xhr.abort();
-        }
-      }
+      if (!xhr || this.abort === undefined) return;
+      rej({
+        type: 'abort',
+        state: this.abort
+      });
+      xhr.abort()
+      xhr = null;
     });
-    if (RP === true) {
-      return p;
-    } else {
-      return this;
+
+    xhr.send(null);
+    return {
+      p,
+      xhr: this
     }
   }
 
-  Get.method('ok', function (fn) {
-    this._ok = fn;
-    return this;
-  })
-
-
-
-  Ajanuw.method('abort', function (name, fn) {
-    abort.name = name;
-    if (fn) {
-      abort.fn = fn;
-    }
-  })
-
   Ajanuw.method('create', function (opt = {}) {
-    CONFIG = new Config(opt);
-    return new Ajanuw()
+    /**
+     * 每个 create 都会返回不同的实例
+     */
+    return new Ajanuw(new Config(opt))
   });
 
   Ajanuw.method('get', function (url, opt, RP) {
-    return new Get(url, opt, RP)
+    return new Get(url, opt, RP, this.CONFIG);
+
   })
 
 
@@ -192,6 +179,14 @@
     l('post请求')
     return this;
   });
+
+
+  function Request(method, url, opt) {
+
+  }
+  Ajanuw.method('request', function (method, url, opt) {
+    return new Request(method, url, opt)
+  })
 
 
   window.ajanuw = new Ajanuw()
