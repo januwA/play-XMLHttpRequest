@@ -1,6 +1,18 @@
 let ajanuw; {
   let l = console.log
 
+  function getXMLHttpRequest() {
+    if (window.XMLHttpRequest) {
+      return new window.XMLHttpRequest;
+    } else {
+      try {
+        return new ActiveXObject("MSXML2.XMLHTTP.3.0");
+      } catch (ex) {
+        return null;
+      }
+    }
+  }
+
   function Util() {}
   Util.handleUrl = function (uri, url) {
     // 处理全局uri 和请求的url
@@ -58,7 +70,8 @@ let ajanuw; {
 
     this.request = function (method, url, opt = {}) {
       let name = opt.name;
-      let xhr = new XMLHttpRequest();
+      let xhr = getXMLHttpRequest();
+      if (!xhr) return;
       let resolve, reject, p;
       p = new Promise((res, rej) => {
         resolve = res;
@@ -116,14 +129,15 @@ let ajanuw; {
       timeout,
       resType
     } = opt;
-    xhr.open(method, url, async);
+    xhr.open(method, url, async); // https://msdn.microsoft.com/zh-cn/ie/ms536648(v=vs.80)
     /**
      * 设置头信息
      */
     const dataTag = Util.tostring(opt.body)
-    if (method === 'POST' || dataTag === '[object Object]' || dataTag === '[object String]') {
+    if (method === 'POST' && dataTag === '[object Object]') { // object会被我序列化为DONString
       xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     }
+
     if (set) {
       for (let k in set) {
         xhr.setRequestHeader(k, set[k]);
@@ -143,16 +157,23 @@ let ajanuw; {
      * 设置服务器返回的数据类型
      * 默认json
      */
-    xhr.responseType = resType || 'json';
+    xhr.responseType = resType || '';
     // if (xhr.overrideMimeType) xhr.overrideMimeType('text/json');
 
     let requestData = null;
-    if (method === 'POST') requestData = Util.jsonToSerializ(opt.body);
+    if (method === 'POST' && dataTag === '[object Object]') {
+      requestData = Util.jsonToSerializ(opt.body);
+    } else {
+      requestData = opt.body;
+    }
 
-    xhr.send(requestData);
+    xhr.send(requestData); // https://msdn.microsoft.com/zh-cn/ie/ms536736(v=vs.80)
 
     xhr.ontimeout = e => {
-      promise.reject('请求超时： ', xhr)
+      promise.reject({
+        type: 'timeout',
+        msg: '请求超时: ' + url
+      });
       xhr = null
     }
 
@@ -172,20 +193,29 @@ let ajanuw; {
       l('请求结束')
     }
 
-    xhr.onabort = e => {
+    xhr.onabort = e => { // https://msdn.microsoft.com/zh-cn/ie/ms535920(v=vs.80)
       if (!xhr) return;
-      promise.reject(xhr.msg);
+      promise.reject({
+        type: 'abort',
+        msg: xhr.msg
+      });
       xhr = null;
     }
 
-    xhr.onreadystatechange = e => {
+    xhr.onreadystatechange = e => { // https://msdn.microsoft.com/zh-cn/ie/dd576252(v=vs.80)
       // Doncs: https://xhr.spec.whatwg.org/#xmlhttprequest
-      if (!xhr || xhr.readyState !== XMLHttpRequest.DONE || !xhr.responseURL) return;
+      if (!xhr || !xhr.responseURL || xhr.readyState !== xhr.DONE) return;
+      if (!xhr || !xhr.responseURL || xhr.status === 0) return;
 
-      if (!xhr || !xhr.responseURL || xhr.status === 0) {
-        return
-      };
+      if (resType && resType !== 'json') {
 
+      }
+      let data;
+      try {
+        data = JSON.parse(xhr.response)
+      } catch (error) {
+        data = xhr.response
+      }
       let responseData = {
         data: xhr.response,
         response: xhr.response,
@@ -194,15 +224,24 @@ let ajanuw; {
         timeout: xhr.readyState,
         status: xhr.status,
         statusText: xhr.statusText,
-        resType: xhr.responseType,
+        responseType: xhr.responseType,
         timeout: xhr.timeout,
         withCredentials: xhr.withCredentials,
         responseHeaders: xhr.getAllResponseHeaders(),
       };
+
+      if (!(xhr.status >= 200 && xhr.status <= 304)) {
+        promise.reject({
+          type: 'error',
+          ...responseData
+        })
+        xhr = null;
+        return
+      }
+
       promise.resolve(responseData);
       xhr = null;
     }
-
     return promise.result;
   }
 

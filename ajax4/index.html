@@ -9,8 +9,9 @@
 </head>
 
 <body>
+  <img src="" alt="" id="my-image">
   <script src="./ajax4.js"></script>
-  <script src="https://cdn.bootcss.com/axios/0.18.0/axios.js"></script>
+  <!-- <script src="https://cdn.bootcss.com/axios/0.18.0/axios.js"></script> -->
   <script>
     let l = console.log
     let http = ajanuw.create({
@@ -18,27 +19,21 @@
       timeout: 3000
     });
 
-    http.request('get', '/get', {
-        name: 'a',
+    http.request('get', '/img', {
         query: {
-          name: 'ajanuw',
-          age: [1]
-        }
+          msg: 'get Image'
+        },
+        resType: 'arraybuffer'
       })
       .then(res => {
-        l(res.data)
+        let data = res.data;
+        l(data)
+        
+        
       })
       .catch(e => {
-        l(e)
+        console.error(e)
       })
-
-    // http.request('get', '/get?a=2', {
-    //   query: {
-    //     hello: 'asd'
-    //   }
-    // }).then(res => {
-    //   l(res.data)
-    // })
 
     // http.abort('a', '退出a请求')
 
