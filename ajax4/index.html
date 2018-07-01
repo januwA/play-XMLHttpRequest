@@ -9,7 +9,6 @@
 </head>
 
 <body>
-  <img src="" alt="" id="my-image">
   <script src="./ajax4.js"></script>
   <!-- <script src="https://cdn.bootcss.com/axios/0.18.0/axios.js"></script> -->
   <script>
@@ -19,30 +18,12 @@
       timeout: 3000
     });
 
-    http.request('get', '/img', {
-        query: {
-          msg: 'get Image'
-        },
-        resType: 'arraybuffer'
-      })
-      .then(res => {
-        let data = res.data;
-        l(data)
-        
-        
-      })
-      .catch(e => {
-        console.error(e)
-      })
-
-    // http.abort('a', '退出a请求')
-
-
-    // axios.get('http://localhost:1995/api/ge', 'a=1').then(
-    //   res=>{
-    //     l(res.data)
-    //   }
-    // )
+    navigator.mediaDevices.getUserMedia({
+      audio: true
+    }).then(function (stream) {
+      // do something with the stream
+      var recorder = new MediaRecorder(stream);
+    })
   </script>
 </body>
 

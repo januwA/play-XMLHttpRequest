@@ -68,6 +68,14 @@ let ajanuw; {
       return new Ajanuw(new Config(opt))
     }
 
+    this.get = function (url, opt) {
+      return this.request('GET', url, opt)
+    }
+
+    this.post = function (url, opt) {
+      return this.request('POST', url, opt)
+    }
+
     this.request = function (method, url, opt = {}) {
       let name = opt.name;
       let xhr = getXMLHttpRequest();
@@ -157,7 +165,7 @@ let ajanuw; {
      * 设置服务器返回的数据类型
      * 默认json
      */
-    xhr.responseType = resType || '';
+    xhr.responseType = resType || 'json';
     // if (xhr.overrideMimeType) xhr.overrideMimeType('text/json');
 
     let requestData = null;
@@ -182,7 +190,7 @@ let ajanuw; {
     }
 
     xhr.onprogress = e => {
-      l('请求进度')
+      // l('请求进度')
     }
 
     xhr.error = e => {
@@ -207,15 +215,6 @@ let ajanuw; {
       if (!xhr || !xhr.responseURL || xhr.readyState !== xhr.DONE) return;
       if (!xhr || !xhr.responseURL || xhr.status === 0) return;
 
-      if (resType && resType !== 'json') {
-
-      }
-      let data;
-      try {
-        data = JSON.parse(xhr.response)
-      } catch (error) {
-        data = xhr.response
-      }
       let responseData = {
         data: xhr.response,
         response: xhr.response,
