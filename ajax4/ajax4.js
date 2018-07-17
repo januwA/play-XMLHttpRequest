@@ -13,7 +13,7 @@ let ajanuw; {
     }
   }
 
-  function Util() {}
+  function Util() {};
   Util.handleUrl = function (uri, url) {
     // 处理全局uri 和请求的url
     return uri ?
@@ -56,8 +56,38 @@ let ajanuw; {
     }
     return res_url;
   }
+
   Util.tostring = function (v) {
     return Object.prototype.toString.call(v);
+  }
+
+  var ignoreDuplicateOf = [
+    'age', 'authorization', 'content-length', 'content-type', 'etag',
+    'expires', 'from', 'host', 'if-modified-since', 'if-unmodified-since',
+    'last-modified', 'location', 'max-forwards', 'proxy-authorization',
+    'referer', 'retry-after', 'user-agent'
+  ];
+  Util.handleHeaders = function (headers_string) {
+    // handling xhr returned headers
+    if (!headers_string) return {};
+    return headers_string.split(/\n/)
+      .filter(el => el !== '')
+      .reduce((acc, $_) => {
+        let [k, v] = $_.split(/\:/);
+        k = k.trim().toLowerCase();
+        v = v.trim();
+        if (k) {
+          if (acc[k] && ignoreDuplicateOf.indexOf(k) >= 0) return acc;
+          if (k === 'set-cookie') {
+            acc[k] = (acc[k] ? acc[k] : []).concat([v]);
+          } else {
+            acc[k] = acc[k] ?
+              acc[k] + ',' + v :
+              v;
+          }
+        }
+        return acc;
+      }, {});
   }
 
   function Ajanuw(config = {}) {
@@ -142,7 +172,7 @@ let ajanuw; {
      * 设置头信息
      */
     const dataTag = Util.tostring(opt.body)
-    if (method === 'POST' && dataTag === '[object Object]') { // object会被我序列化为DONString
+    if (method === 'POST' && dataTag === '[object Object]') { // object会序列化为DONString
       xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     }
 
@@ -220,15 +250,13 @@ let ajanuw; {
         response: xhr.response,
         responseURL: xhr.responseURL,
         readyState: xhr.readyState,
-        timeout: xhr.readyState,
         status: xhr.status,
         statusText: xhr.statusText,
         responseType: xhr.responseType,
         timeout: xhr.timeout,
         withCredentials: xhr.withCredentials,
-        responseHeaders: xhr.getAllResponseHeaders(),
+        responseHeaders: Util.handleHeaders(xhr.getAllResponseHeaders()),
       };
-
       if (!(xhr.status >= 200 && xhr.status <= 304)) {
         promise.reject({
           type: 'error',
