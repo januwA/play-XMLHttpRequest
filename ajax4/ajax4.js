@@ -1,6 +1,9 @@
 let ajanuw; {
   let l = console.log
 
+  /**
+   * 范湖一个 XML对象
+   */
   function getXMLHttpRequest() {
     if (window.XMLHttpRequest) {
       return new window.XMLHttpRequest;
@@ -13,18 +16,24 @@ let ajanuw; {
     }
   }
 
+  /**
+   * 一些工具处理函数
+   */
   function Util() {};
+
   Util.handleUrl = function (uri, url) {
     // 处理全局uri 和请求的url
     return uri ?
       uri.replace(/\/+$/, '') + '/' + url.replace(/^\/+/, '') :
       url;
   }
+
   Util.handleData = function (data) {
     return data ?
       Util.jsonToSerializ(data) :
       data;
   }
+
   Util.jsonToSerializ = function (o = {}) {
     let s = '';
     for (let k in o) {
@@ -42,6 +51,7 @@ let ajanuw; {
     }
     return s.replace(/&$/, '');
   }
+
   Util.handleUrlQuery = function (uri, url, query) {
     // 把get请求的query拼接到url里面，返回url
     let res_url;
@@ -67,6 +77,7 @@ let ajanuw; {
     'last-modified', 'location', 'max-forwards', 'proxy-authorization',
     'referer', 'retry-after', 'user-agent'
   ];
+
   Util.handleHeaders = function (headers_string) {
     // handling xhr returned headers
     if (!headers_string) return {};
@@ -90,33 +101,73 @@ let ajanuw; {
       }, {});
   }
 
+  /**
+   * * 实例化一个请求
+   * @param {*} config 
+   */
   function Ajanuw(config = {}) {
     this.CONFIG = config;
-    this.REQS = {};
 
+    /**
+     * * 更具配置返回一个新的xml对象
+     * @param {*} opt 
+     */
     this.create = function (opt) {
       return new Ajanuw(new Config(opt))
     }
 
-    this.get = function (url, opt) {
+    /**
+     * * ajax 的get方法
+     * @param {*} url 
+     * @param {*} opt 
+     */
+    this.get = function (url, opt={}) {
       return this.request('GET', url, opt)
     }
 
-    this.post = function (url, opt) {
+    /**
+     * * ajax的 post方法
+     * @param {*} url 
+     * @param {*} opt 
+     */
+    this.post = function (url, opt={}) {
       return this.request('POST', url, opt)
     }
 
+    /**
+     * * 所欲的ajax请求都基于这个对象
+     * @param {*} method 
+     * @param {*} url 
+     * @param {*} opt 
+     */
     this.request = function (method, url, opt = {}) {
+
+      /**
+       * * name属性用来给一个请求定义一个名字，用于追踪这个请求，好abort它
+       */
       let name = opt.name;
+
+      /**
+       * * 获取一个 xml
+       */
       let xhr = getXMLHttpRequest();
+
       if (!xhr) return;
+
+      /**
+       * * 创建一个 promise对象
+       */
       let resolve, reject, p;
       p = new Promise((res, rej) => {
         resolve = res;
         reject = rej;
       })
+
+      /**
+       * * 区分ajax是否有 name
+       */
       if (name) {
-        if (name in this.REQS) {
+        if (name in Ajanuw.REQS) {
           xhr = null;
           reject(
             '请求创建失败，' +
@@ -124,19 +175,29 @@ let ajanuw; {
             ' 已经存在！'
           );
         } else {
-          this.REQS[name] = xhr;
+          Ajanuw.REQS[name] = xhr;
         }
       } else {
         // l('没有name，不跟踪这个请求') // 不能被abort
       }
+
+
+      /**
+       * * 处理请求所需的 url
+       */
       let query = Util.handleData(opt.query);
       url = Util.handleUrlQuery(this.CONFIG.uri, url, query);
-      // 
+
+      /**
+       * * 构建一个请求
+       * (xml, { method, url, async, opt, name}, global_config, our_promise)
+       */
       return new Request(xhr, {
         method: method.toUpperCase(),
         url,
         async: true,
         ...opt,
+        name
       }, this.CONFIG, {
         result: p,
         resolve,
@@ -145,12 +206,19 @@ let ajanuw; {
     }
   }
 
+  Ajanuw.REQS = {}
+
+  /**
+   * 更具传入的 name属性，停止指定的请求，返回promise
+   * @param {*} name 
+   * @param {*} msg 
+   */
   Ajanuw.prototype.abort = function (name, msg) {
     return new Promise((resolve, reject) => {
-      if (name in this.REQS) {
-        this.REQS[name].msg = msg;
-        this.REQS[name].abort();
-        delete this.REQS[name];
+      if (name in Ajanuw.REQS) {
+        Ajanuw.REQS[name].msg = msg;
+        Ajanuw.REQS[name].abort();
+        delete Ajanuw.REQS[name]; // 成功停止，移除这个请求
         resolve('OK');
       } else {
         reject('Not Found')
@@ -158,32 +226,67 @@ let ajanuw; {
     })
   };
 
+
+  /**
+   * * 所有的请求都再这里处理
+   * @param {*} xhr 
+   * @param {*} opt 
+   * @param {*} config 
+   * @param {*} promise 
+   */
   function Request(xhr, opt, config, promise) {
+
+    /**
+     * method  请求方法 get post ...
+     * url 请求地址如: http://localhost:5000async
+     * async  是否用异步处理请求 default: true
+     * set  请求所需要的请求头 {X-name: 'ajanuw'}
+     * timeout  请求超时如 2s: 2000
+     * resType  指定请求返回什么数据: json text arraybuffer document ...
+     */
     const {
       method,
       url,
       async,
       set,
       timeout,
-      resType
+      resType,
+      name
     } = opt;
     xhr.open(method, url, async); // https://msdn.microsoft.com/zh-cn/ie/ms536648(v=vs.80)
+
+
     /**
      * 设置头信息
+     * 如果是post请求，还是json数据，自动添加 application/x-www-form-urlencoded
      */
     const dataTag = Util.tostring(opt.body)
     if (method === 'POST' && dataTag === '[object Object]') { // object会序列化为DONString
       xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     }
 
-    if (set) {
-      for (let k in set) {
-        xhr.setRequestHeader(k, set[k]);
+    /**
+     * * post FormData 的话自动加header头
+     */
+    if (method === 'POST' && dataTag === '[object FormData]') {
+      xhr.setRequestHeader('Content-Type', 'multipart/form-data')
+    }
+
+    /**
+     * * 先合并全局的header和请求时设置的header
+     * * 继续加header头
+     */
+    Object.assign(config.headers, set)
+    if (config.headers) {
+      let { headers } = config;
+      for (let k in headers) {
+        xhr.setRequestHeader(k, headers[k])
       }
     }
 
     /**
      * 设置 timeout
+     * opt.timeout > config.timeout
      */
     if (timeout) {
       xhr.timeout = timeout;
@@ -195,9 +298,12 @@ let ajanuw; {
      * 设置服务器返回的数据类型
      * 默认json
      */
-    xhr.responseType = resType || 'json';
+    xhr.responseType = resType || config.resType;
     // if (xhr.overrideMimeType) xhr.overrideMimeType('text/json');
 
+    /**
+     * * 设置 send时的数据
+     */
     let requestData = null;
     if (method === 'POST' && dataTag === '[object Object]') {
       requestData = Util.jsonToSerializ(opt.body);
@@ -207,11 +313,14 @@ let ajanuw; {
 
     xhr.send(requestData); // https://msdn.microsoft.com/zh-cn/ie/ms536736(v=vs.80)
 
-    xhr.ontimeout = e => {
+    /**
+     * 超时请求结束
+     */
+    xhr.ontimeout = () => {
       promise.reject({
         type: 'timeout',
         msg: '请求超时: ' + url
-      });
+      })
       xhr = null
     }
 
@@ -219,25 +328,32 @@ let ajanuw; {
       l('请求开始')
     }
 
-    xhr.onprogress = e => {
-      // l('请求进度')
-    }
+    // xhr.onprogress = e => {
+    //   // l('请求进度')
+    // }
 
     xhr.error = e => {
       l('请求发生错误')
+      xhr = null
     }
 
     xhr.loadend = e => {
-      l('请求结束')
+      xhr = null
     }
 
-    xhr.onabort = e => { // https://msdn.microsoft.com/zh-cn/ie/ms535920(v=vs.80)
+    /**
+     * * 请求被手动结束
+     */
+    xhr.onabort = () => { // https://msdn.microsoft.com/zh-cn/ie/ms535920(v=vs.80)
       if (!xhr) return;
       promise.reject({
         type: 'abort',
         msg: xhr.msg
-      });
-      xhr = null;
+      })
+      xhr = null
+      // setTimeout(()=>{
+      // l(Ajanuw.REQS)
+      // })
     }
 
     xhr.onreadystatechange = e => { // https://msdn.microsoft.com/zh-cn/ie/dd576252(v=vs.80)
@@ -257,29 +373,53 @@ let ajanuw; {
         withCredentials: xhr.withCredentials,
         responseHeaders: Util.handleHeaders(xhr.getAllResponseHeaders()),
       };
+
       if (!(xhr.status >= 200 && xhr.status <= 304)) {
         promise.reject({
           type: 'error',
           ...responseData
         })
         xhr = null;
-        return
+        return promise.result
       }
 
-      promise.resolve(responseData);
-      xhr = null;
+      /**
+       * * 请求结束, 数据放在 promise里面
+       */
+      promise.resolve(responseData)
+      xhr = null
+      l(Ajanuw.REQS)
     }
-    return promise.result;
+
+    /**
+     * * request 结束返回 promise.result
+     */
+    return promise.result
   }
 
+  /**
+   * * 设置全局配置
+   * @param { url: string, timeout: number, hedaers: Object, resTyle: string } config 
+   */
   function Config(config = {}) {
     let {
       uri,
-      timeout
+      timeout,
+      headers,
+      resType,
     } = config;
+
     this.uri = uri || '';
     this.timeout = timeout || 0;
+    this.headers = headers || {};
+    this.resType = resType || 'json'
   }
 
+  /**
+   * * ajanuw.get(url, {
+   *   query: {},
+   * }).then(({data}) => alert(data))
+   *   .catch(e => alert(e))
+   */
   window.ajanuw = ajanuw = new Ajanuw(new Config())
 }
