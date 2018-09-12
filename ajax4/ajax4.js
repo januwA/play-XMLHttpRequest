@@ -251,8 +251,18 @@ let ajanuw; {
       set,
       timeout,
       resType,
-      name
+      name,
+      progress,
     } = opt;
+
+    /**
+     * * 需要上传进度
+     */
+    if(progress){
+      xhr.upload.addEventListener('progress', e => {
+
+      })
+    }
     xhr.open(method, url, async); // https://msdn.microsoft.com/zh-cn/ie/ms536648(v=vs.80)
 
 
