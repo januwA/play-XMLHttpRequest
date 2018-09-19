@@ -121,7 +121,7 @@ let ajanuw; {
      * @param {*} url 
      * @param {*} opt 
      */
-    this.get = function (url, opt={}) {
+    this.get = function (url, opt = {}) {
       return this.request('GET', url, opt)
     }
 
@@ -130,7 +130,7 @@ let ajanuw; {
      * @param {*} url 
      * @param {*} opt 
      */
-    this.post = function (url, opt={}) {
+    this.post = function (url, opt = {}) {
       return this.request('POST', url, opt)
     }
 
@@ -151,7 +151,6 @@ let ajanuw; {
        * * 获取一个 xml
        */
       let xhr = getXMLHttpRequest();
-
       if (!xhr) return;
 
       /**
@@ -159,8 +158,7 @@ let ajanuw; {
        */
       let resolve, reject, p;
       p = new Promise((res, rej) => {
-        resolve = res;
-        reject = rej;
+        resolve = res, reject = rej;
       })
 
       /**
@@ -209,9 +207,13 @@ let ajanuw; {
   Ajanuw.REQS = {}
 
   /**
-   * 更具传入的 name属性，停止指定的请求，返回promise
+   * 根据传入的 name属性，停止指定的请求，返回promise
    * @param {*} name 
    * @param {*} msg 
+   * 
+   *  ajanuw.abort('test', '立即结束 text请求').then(res => {
+        l('结束成功', res)
+      })
    */
   Ajanuw.prototype.abort = function (name, msg) {
     return new Promise((resolve, reject) => {
@@ -225,7 +227,6 @@ let ajanuw; {
       }
     })
   };
-
 
   /**
    * * 所有的请求都再这里处理
@@ -256,13 +257,19 @@ let ajanuw; {
     } = opt;
 
     /**
-     * * 需要上传进度
+     * * 获取上传的进度
      */
-    if(progress){
-      xhr.upload.addEventListener('progress', e => {
+    if (progress && typeof progress === 'function') {
 
-      })
+      xhr.upload.onprogress = e => {
+        if (e.lengthComputable) {
+          var percentage = Math.round((e.loaded * 100) / e.total);
+          progress(percentage)
+        }
+      }
     }
+
+
     xhr.open(method, url, async); // https://msdn.microsoft.com/zh-cn/ie/ms536648(v=vs.80)
 
 
@@ -276,19 +283,14 @@ let ajanuw; {
     }
 
     /**
-     * * post FormData 的话自动加header头
-     */
-    if (method === 'POST' && dataTag === '[object FormData]') {
-      xhr.setRequestHeader('Content-Type', 'multipart/form-data')
-    }
-
-    /**
      * * 先合并全局的header和请求时设置的header
      * * 继续加header头
      */
     Object.assign(config.headers, set)
     if (config.headers) {
-      let { headers } = config;
+      let {
+        headers
+      } = config;
       for (let k in headers) {
         xhr.setRequestHeader(k, headers[k])
       }
@@ -361,9 +363,6 @@ let ajanuw; {
         msg: xhr.msg
       })
       xhr = null
-      // setTimeout(()=>{
-      // l(Ajanuw.REQS)
-      // })
     }
 
     xhr.onreadystatechange = e => { // https://msdn.microsoft.com/zh-cn/ie/dd576252(v=vs.80)
@@ -398,7 +397,9 @@ let ajanuw; {
        */
       promise.resolve(responseData)
       xhr = null
-      l(Ajanuw.REQS)
+      if (name) {
+        delete Ajanuw.REQS[name]
+      }
     }
 
     /**
@@ -419,14 +420,14 @@ let ajanuw; {
       resType,
     } = config;
 
-    this.uri = uri || '';
-    this.timeout = timeout || 0;
-    this.headers = headers || {};
+    this.uri = uri || ''
+    this.timeout = timeout || 0
+    this.headers = headers || {}
     this.resType = resType || 'json'
   }
 
   /**
-   * * ajanuw.get(url, {
+   * ajanuw.get(url, {
    *   query: {},
    * }).then(({data}) => alert(data))
    *   .catch(e => alert(e))

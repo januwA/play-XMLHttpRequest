@@ -9,29 +9,49 @@
 </head>
 
 <body>
+    <input type="file" name="file" id='upload' />
     <script src="./ajax4/ajax4.js"></script>
     <script>
         async function main() {
             let l = console.log;
             let http = ajanuw.create({
                 uri: 'http://localhost:5000',
-                resType: 'text'
             })
 
-           http.get('/test2',{
-               resType: 'json',
-               name: 'text2'
-           }).then(res => {
-               l(res)
-           }).catch(e => {
-               l(e)
-           })
+            document.querySelector('#upload').onchange = async function (e) {
+                let file = e.target.files[0]
 
-           ajanuw.abort('text2', '立即结束 text2请求').then(res => {
-               l('结束成功', res)
-           }).catch(e => {
-               l('结束失败', e)
-           })
+                let sendData = new FormData()
+                sendData.append('name', 'ajanuw')
+                sendData.append('file', file)
+
+                let {
+                    data
+                } = await http.post('/test3', {
+                    name: 'uplaod',
+                    body: sendData,
+                    progress: e => {
+                        l(e)
+                    },
+                })
+                l(data)
+            }
+
+
+            //    http.get('/test2',{
+            //        resType: 'json',
+            //        name: 'text2',
+            //    }).then(res => {
+            //        l(res.data)
+            //    }).catch(e => {
+            //        l(e)
+            //    })
+
+            //    ajanuw.abort('text2', '立即结束 text2请求').then(res => {
+            //        l('结束成功', res)
+            //    }).catch(e => {
+            //        l('结束失败', e)
+            //    })
 
         }
         main()
