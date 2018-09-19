@@ -253,18 +253,27 @@ let ajanuw; {
       timeout,
       resType,
       name,
-      progress,
+      upload,
     } = opt;
 
     /**
-     * * 获取上传的进度
+     * * upload
+     * * progress,loadstart,error,abort,timeout,load,loadend
      */
-    if (progress && typeof progress === 'function') {
-
-      xhr.upload.onprogress = e => {
-        if (e.lengthComputable) {
-          var percentage = Math.round((e.loaded * 100) / e.total);
-          progress(percentage)
+    if (upload) {
+      let eNames = 'progress,loadstart,error,abort,timeout,load,loadend'.split(/,/)
+      for (let eName in upload) {
+        if(!eNames.includes(eName)) continue;
+        l(eName)
+        xhr.upload['on' + eName] = e => {
+          if (eName === 'progress') {
+            if (e.lengthComputable) {
+              var percentage = Math.round((e.loaded * 100) / e.total);
+              upload[eName](percentage)
+            }
+          } else {
+            upload[eName](e)
+          }
         }
       }
     }

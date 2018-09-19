@@ -30,9 +30,17 @@
                 } = await http.post('/test3', {
                     name: 'uplaod',
                     body: sendData,
-                    progress: e => {
-                        l(e)
-                    },
+                    upload: {
+                        progress: e => {
+                            l(e)
+                        },
+                        loadend: e => {
+                            l('上传停止')
+                        },
+                        error(){
+                            l('error')
+                        },
+                    }
                 })
                 l(data)
             }
