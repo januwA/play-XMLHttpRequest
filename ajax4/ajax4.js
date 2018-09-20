@@ -2,7 +2,7 @@ let ajanuw; {
   let l = console.log
 
   /**
-   * 范湖一个 XML对象
+   * 获取一个 xhr
    */
   function getXMLHttpRequest() {
     if (window.XMLHttpRequest) {
@@ -17,7 +17,7 @@ let ajanuw; {
   }
 
   /**
-   * 一些工具处理函数
+   * 工具函数
    */
   function Util() {};
 
@@ -101,12 +101,26 @@ let ajanuw; {
       }, {});
   }
 
+  let hooks = 'beforeEach,afterEach,errorEach,abortEach'.split(/,/)
   /**
    * * 实例化一个请求
    * @param {*} config 
    */
   function Ajanuw(config = {}) {
-    this.CONFIG = config;
+    this.CONFIG = config // 全局配置
+
+    /**
+     * beforeEach 每个请求发送前都执行
+     * afterEach  每个请求发送成功后都执行
+     * errorEach  每个请求出现错误时执行
+     * abortEach  每个请求被退出时执行
+     */
+    this.HOOKS = {
+      beforeEach: null,
+      afterEach: null,
+      errorEach: null,
+      abortEach: null,
+    } // 全局钩子
 
     /**
      * * 更具配置返回一个新的xml对象
@@ -114,6 +128,13 @@ let ajanuw; {
      */
     this.create = function (opt) {
       return new Ajanuw(new Config(opt))
+    }
+
+    this.hook = function (opt) {
+      for (hook in opt) {
+        if (!hooks.includes(hook)) continue;
+        this.HOOKS[hook] = opt[hook]
+      }
     }
 
     /**
@@ -135,7 +156,7 @@ let ajanuw; {
     }
 
     /**
-     * * 所欲的ajax请求都基于这个对象
+     * * 所有的ajax请求都基于这个对象
      * @param {*} method 
      * @param {*} url 
      * @param {*} opt 
@@ -196,7 +217,7 @@ let ajanuw; {
         async: true,
         ...opt,
         name
-      }, this.CONFIG, {
+      }, this.CONFIG, this.HOOKS, {
         result: p,
         resolve,
         reject
@@ -228,6 +249,8 @@ let ajanuw; {
     })
   };
 
+
+  let uploadEvents = 'progress,loadstart,error,abort,timeout,load,loadend'.split(/,/)
   /**
    * * 所有的请求都再这里处理
    * @param {*} xhr 
@@ -235,7 +258,7 @@ let ajanuw; {
    * @param {*} config 
    * @param {*} promise 
    */
-  function Request(xhr, opt, config, promise) {
+  function Request(xhr, opt, config, hooks, promise) {
 
     /**
      * method  请求方法 get post ...
@@ -261,9 +284,8 @@ let ajanuw; {
      * * progress,loadstart,error,abort,timeout,load,loadend
      */
     if (upload) {
-      let eNames = 'progress,loadstart,error,abort,timeout,load,loadend'.split(/,/)
       for (let eName in upload) {
-        if(!eNames.includes(eName)) continue;
+        if (!uploadEvents.includes(eName)) continue;
         l(eName)
         xhr.upload['on' + eName] = e => {
           if (eName === 'progress') {
@@ -278,7 +300,8 @@ let ajanuw; {
       }
     }
 
-
+    xhr['name'] = name
+    typeof hooks.beforeEach === 'function' && hooks.beforeEach(xhr)
     xhr.open(method, url, async); // https://msdn.microsoft.com/zh-cn/ie/ms536648(v=vs.80)
 
 

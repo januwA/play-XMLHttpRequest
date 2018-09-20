@@ -17,43 +17,33 @@
             let http = ajanuw.create({
                 uri: 'http://localhost:5000',
             })
-
-            document.querySelector('#upload').onchange = async function (e) {
-                let file = e.target.files[0]
-
-                let sendData = new FormData()
-                sendData.append('name', 'ajanuw')
-                sendData.append('file', file)
-
-                let {
-                    data
-                } = await http.post('/test3', {
-                    name: 'uplaod',
-                    body: sendData,
-                    upload: {
-                        progress: e => {
-                            l(e)
-                        },
-                        loadend: e => {
-                            l('上传停止')
-                        },
-                        error(){
-                            l('error')
-                        },
+            let n = 1;
+            http.hook({
+                beforeEach(xhr){
+                    l(n, xhr)
+                    if(xhr.name === 'text2'){
+                        xhr.abort()
                     }
-                })
-                l(data)
-            }
+                    n++
+                }
+            })
 
+            http.get('/test2', {
+                resType: 'json',
+                name: 'text2',
+            }).then(res => {
+                l(res.data)
+            }).catch(e => {
+                l(e)
+            })
 
-            //    http.get('/test2',{
-            //        resType: 'json',
-            //        name: 'text2',
-            //    }).then(res => {
-            //        l(res.data)
-            //    }).catch(e => {
-            //        l(e)
-            //    })
+            http.get('/test2', {
+                resType: 'json',
+            }).then(res => {
+                l(res.data)
+            }).catch(e => {
+                l(e)
+            })
 
             //    ajanuw.abort('text2', '立即结束 text2请求').then(res => {
             //        l('结束成功', res)
