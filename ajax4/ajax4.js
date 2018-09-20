@@ -114,12 +114,14 @@ let ajanuw; {
      * afterEach  每个请求发送成功后都执行
      * errorEach  每个请求出现错误时执行
      * abortEach  每个请求被退出时执行
+     * timeoutEach
      */
     this.HOOKS = {
       beforeEach: null,
       afterEach: null,
       errorEach: null,
       abortEach: null,
+      timeoutEach: null,
     } // 全局钩子
 
     /**
@@ -300,8 +302,7 @@ let ajanuw; {
       }
     }
 
-    xhr['name'] = name
-    typeof hooks.beforeEach === 'function' && hooks.beforeEach(xhr)
+    typeof hooks.beforeEach === 'function' && hooks.beforeEach()
     xhr.open(method, url, async); // https://msdn.microsoft.com/zh-cn/ie/ms536648(v=vs.80)
 
 
@@ -365,6 +366,7 @@ let ajanuw; {
         type: 'timeout',
         msg: '请求超时: ' + url
       })
+      hooks.timeoutEach()
       xhr = null
     }
 
@@ -377,7 +379,7 @@ let ajanuw; {
     // }
 
     xhr.error = e => {
-      l('请求发生错误')
+      hooks.errorEach()
       xhr = null
     }
 
@@ -394,6 +396,7 @@ let ajanuw; {
         type: 'abort',
         msg: xhr.msg
       })
+      hooks.abortEach()
       xhr = null
     }
 
@@ -420,6 +423,7 @@ let ajanuw; {
           type: 'error',
           ...responseData
         })
+        hooks.afterEach()
         xhr = null;
         return promise.result
       }
@@ -428,6 +432,7 @@ let ajanuw; {
        * * 请求结束, 数据放在 promise里面
        */
       promise.resolve(responseData)
+      hooks.afterEach()
       xhr = null
       if (name) {
         delete Ajanuw.REQS[name]
